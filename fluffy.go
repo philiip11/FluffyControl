@@ -182,7 +182,7 @@ func main() {
 	}
 	// Restart Fluffy. This is not important but it makes a sound so I know when this program starts
 	sendIr(POWER)
-	time.Sleep(1 * time.Second)
+	time.Sleep(2 * time.Second)
 	sendIr(POWER)
 
 	http.HandleFunc("/Fluffy/start", start)
