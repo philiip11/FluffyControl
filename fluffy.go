@@ -23,20 +23,19 @@ const (
 	SPOT       = "SPOT"
 	MAX        = "MAX"
 	STARTSTOP  = "STARTSTOP"
-	UP         = "UP"
-	LEFT       = "LEFT"
-	RIGHT      = "RIGHT"
-	MANUAL     = "MANUAL"
-	EDGE       = "EDGE"
-	TIMERDAILY = "TIMERDAILY"
-	CLOCK      = "CLOCK"
+	//UP         = "UP"
+	//LEFT       = "LEFT"
+	//RIGHT      = "RIGHT"
+	//MANUAL     = "MANUAL"
+	EDGE = "EDGE"
+	//TIMERDAILY = "TIMERDAILY"
+	//CLOCK      = "CLOCK"
 )
 
 //change this if you prefer another mode
 var defaultMode = EDGE
 
 var running = false
-var charging = false
 var ir *lirc.Router
 var lastRun = time.Date(1970, time.January, 1, 0, 0, 0, 0, time.UTC)
 
@@ -58,9 +57,17 @@ func intelligentClean() {
 		running = true
 		sendIr(defaultMode)
 		time.Sleep(10 * time.Minute)
+		if !running {
+			log.Println("Intelligentes Saugen: abgebrochen")
+			return
+		}
 		log.Println("Intelligentes Saugen: Zeit zum Aufladen")
 		sendIr(STARTSTOP)
 		time.Sleep(20 * time.Minute)
+		if !running {
+			log.Println("Intelligentes Saugen: abgebrochen")
+			return
+		}
 		log.Println("Intelligentes Saugen: fertig geladen und los")
 		sendIr(defaultMode)
 	} else {
@@ -69,16 +76,26 @@ func intelligentClean() {
 	}
 }
 
-func start(w http.ResponseWriter, _ *http.Request) {
-	log.Println("Starte den Staubsauger.")
+func start(w http.ResponseWriter, r *http.Request) {
+	log.Println("Starte den Staubsauger. IP: " + GetIP(r))
 	go intelligentClean()
 	_, _ = io.WriteString(w, "OK\n")
 }
 
+func stop(w http.ResponseWriter, r *http.Request) {
+	log.Println("Stoppe den Staubsauger. IP: " + GetIP(r))
+	running = false
+	sendIr(STARTSTOP)
+	go func() {
+		time.Sleep(5 * time.Second)
+		sendIr(RECHARGING)
+	}()
+	_, _ = io.WriteString(w, "OK\n")
+}
 func loop(w http.ResponseWriter, r *http.Request) {
 	body, _ := ioutil.ReadAll(r.Body)
 	hours, _ := strconv.Atoi(string(body))
-	log.Println("Starte den Staubsauger im Dauerbetrieb für " + string(hours) + " Stunden.")
+	log.Println("Starte den Staubsauger im Dauerbetrieb für " + string(hours) + " Stunden. IP: " + GetIP(r))
 	go vacuum(hours)
 	_, _ = io.WriteString(w, "OK\n")
 }
@@ -95,26 +112,28 @@ func vacuum(hours int) {
 }
 
 func setCron(t string) {
-	_ = gocron.Every(1).Day().At(t).Do(intelligentClean)
+	log.Println("Starte den Staubsauger jeden Tag um " + t + " Uhr.")
+	gocron.Clear()
+	err := gocron.Every(1).Day().At(t).Do(intelligentClean)
+	if err != nil {
+		log.Println("gocron: " + err.Error())
+	}
+	go func() { <-gocron.Start() }()
+	_ = ioutil.WriteFile("/home/pi/go/gocron", []byte(t), 0644)
 }
 
 func setTime(w http.ResponseWriter, r *http.Request) {
+	log.Println("IP: " + GetIP(r))
 	body, _ := ioutil.ReadAll(r.Body)
 	t := string(body)
 	t = strings.ReplaceAll(t, "Uhr", "")
-	log.Println("Starte den Staubsauger jeden Tag um " + t + " Uhr.")
+	t = strings.ReplaceAll(t, "uhr", "")
+	t = strings.ReplaceAll(t, "ur", "")
+	t = strings.ReplaceAll(t, " ", "")
+	if !strings.Contains(t, ":") && len(t) == 2 {
+		t = t + ":00"
+	}
 	setCron(t)
-	_, _ = io.WriteString(w, "OK\n")
-}
-
-func stop(w http.ResponseWriter, _ *http.Request) {
-	log.Println("Stoppe den Staubsauger.")
-	running = false
-	sendIr(STARTSTOP)
-	go func() {
-		time.Sleep(5 * time.Second)
-		sendIr(RECHARGING)
-	}()
 	_, _ = io.WriteString(w, "OK\n")
 }
 
@@ -143,6 +162,7 @@ func main() {
 	}
 	log.SetOutput(file)
 	defer file.Close()
+	log.Println("####################")
 	log.Println("Start Fluffy service")
 	defer log.Println("Stopping Fluffy service")
 
@@ -152,9 +172,17 @@ func main() {
 		log.Fatal(err)
 	}
 
-	// Restart Fluffy
+	// INIT gocron
+	if _, err := os.Stat("/home/pi/go/gocron"); err == nil {
+		readFile, err := ioutil.ReadFile("/home/pi/go/gocron")
+		if err != nil {
+			log.Fatal(err)
+		}
+		setCron(string(readFile))
+	}
+	// Restart Fluffy. This is not important but it makes a sound so I know when this program starts
 	sendIr(POWER)
-	time.Sleep(3 * time.Second)
+	time.Sleep(1 * time.Second)
 	sendIr(POWER)
 
 	http.HandleFunc("/Fluffy/start", start)
