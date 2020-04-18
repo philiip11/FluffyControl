@@ -14,6 +14,9 @@ Also, it provides a REST-API for connecting Google Assistant via ifttt.com to yo
 You will need a Raspberry Pi with the latest Raspbian image, an IR LED and, if you want to use another vacuum cleaner, an IR receiver to record the IR codes.
 If you want to use this server with a Samsung Navibot SR8855, you can copy the `lircd.conf` file to `/etc/lirc/lircd.conf`.
 
+Install the IR LED and receiver according to this instructions:
+[Setting up lirc](https://github.com/AnaviTechnology/anavi-docs/blob/master/anavi-infrared-phat/anavi-infrared-phat.md#setting-up-lirc)
+
 // TODO
 
 // Add more instructions
