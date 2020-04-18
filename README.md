@@ -15,4 +15,5 @@ You will need a Raspberry Pi with the latest Raspbian image, an IR LED and, if y
 If you want to use this server with a Samsung Navibot SR8855, you can copy the `lircd.conf` file to `/etc/lirc/lircd.conf`.
 
 // TODO
+
 // Add more instructions
