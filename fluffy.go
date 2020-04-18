@@ -17,7 +17,7 @@ import (
 Available IR Codes for Samsung Navibot SR 8855
 */
 const (
-	POWER      = "POWER"
+	//POWER      = "POWER"
 	RECHARGING = "RECHARGING"
 	AUTO       = "AUTO"
 	SPOT       = "SPOT"
@@ -29,7 +29,7 @@ const (
 	//MANUAL     = "MANUAL"
 	EDGE = "EDGE"
 	//TIMERDAILY = "TIMERDAILY"
-	//CLOCK      = "CLOCK"
+	//CLOCK = "CLOCK"
 )
 
 //change this if you prefer another mode
@@ -180,10 +180,9 @@ func main() {
 		}
 		setCron(string(readFile))
 	}
-	// Restart Fluffy. This is not important but it makes a sound so I know when this program starts
-	sendIr(POWER)
-	time.Sleep(2 * time.Second)
-	sendIr(POWER)
+
+	// This is not important but it makes a sound so I know when this program starts
+	sendIr(RECHARGING)
 
 	http.HandleFunc("/Fluffy/start", start)
 	http.HandleFunc("/Fluffy/stop", stop)
