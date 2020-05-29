@@ -78,12 +78,14 @@ func intelligentClean() {
 
 func start(w http.ResponseWriter, r *http.Request) {
 	log.Println("Starte den Staubsauger. IP: " + GetIP(r))
+	beep()
 	go intelligentClean()
 	_, _ = io.WriteString(w, "OK\n")
 }
 
 func stop(w http.ResponseWriter, r *http.Request) {
 	log.Println("Stoppe den Staubsauger. IP: " + GetIP(r))
+	beep()
 	running = false
 	sendIr(STARTSTOP)
 	go func() {
@@ -130,7 +132,7 @@ func setTime(w http.ResponseWriter, r *http.Request) {
 	t = strings.ReplaceAll(t, "uhr", "")
 	t = strings.ReplaceAll(t, "ur", "")
 	t = strings.ReplaceAll(t, " ", "")
-	if !strings.Contains(t, ":") && len(t) == 2 {
+	if !strings.Contains(t, ":") {
 		t = t + ":00"
 	}
 	setCron(t)
@@ -152,6 +154,10 @@ func GetIP(r *http.Request) string {
 		return forwarded
 	}
 	return r.RemoteAddr
+}
+
+func beep() {
+	sendIr(RECHARGING)
 }
 
 func main() {
