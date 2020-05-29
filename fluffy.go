@@ -126,6 +126,7 @@ func setCron(t string) {
 }
 
 func setTime(w http.ResponseWriter, r *http.Request) {
+	beep()
 	log.Println("IP: " + GetIP(r))
 	body, _ := ioutil.ReadAll(r.Body)
 	t := string(body)
