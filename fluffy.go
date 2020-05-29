@@ -52,13 +52,14 @@ func sendIr(command string) {
 }
 
 func intelligentClean() {
-	if lastRun.Add(8 * time.Hour).Before(time.Now()) {
+	if lastRun.Add(4 * time.Hour).Before(time.Now()) {
 		log.Println("Intelligentes Saugen: Akku wird geleert")
 		running = true
 		sendIr(defaultMode)
 		time.Sleep(10 * time.Minute)
 		if !running {
 			log.Println("Intelligentes Saugen: abgebrochen")
+			lastRun = time.Now().Add(-24 * time.Hour) // Assume battery hasn't been fully discharged
 			return
 		}
 		log.Println("Intelligentes Saugen: Zeit zum Aufladen")
